@@ -6,6 +6,7 @@
 {% block contenido %}
     <main class="container">
         <h1 class="text-xl-center title"> Alumnos </h1>
+        <a href="alta_alumno" class="btn btn-primary btn-sm">Nuevo Alumno</a>
         <table class="table">
             <thead>
                 <tr>
@@ -20,6 +21,10 @@
                     <td>{{n.id}}</td>
                     <td>{{n.nombre}}</td>
                     <td>{{n.apellido}}</td>
+                    {% if  request.user.is_authenticated %}
+                    <td><a href="{% url 'elimina_alumno' n.id %}" class="btn btn-danger">Borrar</a></td>
+                    <td><a href="{% url 'editar_alumno'  n.id %}" class="btn btn-warning btn-sm">EDITAR</a></td>
+                    {% endif %}
                 </tr>
 
                 {% endfor %}

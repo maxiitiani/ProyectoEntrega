@@ -2,12 +2,13 @@ from django.shortcuts import render
 from AppCoder.models import Curso
 from AppCoder.models import Alumno
 from AppCoder.models import Profesor
+from AppCoder.models import Avatar
 from django.http import HttpResponse
 from django.template import loader
 from AppCoder.forms import Curso_formulario, UserEditForm, Alumno_formulario, Profesor_formulario
 from django.contrib.auth.forms import AuthenticationForm , UserCreationForm
 from django.contrib.auth import login, authenticate
-
+from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
@@ -33,6 +34,7 @@ def alta_alumno(request,nombre):
     texto = f"Se guardo en la BD el alumno: {alumno.nombre} {alumno.apellido}"
     return HttpResponse(texto)
 
+@login_required
 def ver_cursos(request):
     cursos = Curso.objects.all()
     dicc = {"cursos": cursos}
@@ -172,13 +174,70 @@ def editar(request , id):
             curso = Curso.objects.all()
 
             return render(request , "cursos.html" , {"cursos":curso})
-
-
-        
     else:
         mi_formulario = Curso_formulario(initial={"nombre":curso.nombre , "camada":curso.camada})
     
     return render( request , "editar_curso.html" , {"mi_formulario": mi_formulario , "curso":curso})
+        
+def elimina_alumno(request , id):
+    alumno = Alumno.objects.get(id=id)
+    alumno.delete()
+
+    alumno = Alumno.objects.all()
+
+    return render(request , "alumnos.html" , {"alumnos":alumno})
+
+def editar_alumno(request , id):
+
+    alumno = Alumno.objects.get(id=id)
+
+    if request.method == "POST":
+
+        mi_formulario1 = Alumno_formulario( request.POST )
+        if mi_formulario1.is_valid():
+            datos = mi_formulario1.cleaned_data
+            alumno.nombre = datos["Nombre"]
+            alumno.apellido = datos["Apellido"]
+            alumno.save()
+
+            alumno = Alumno.objects.all()
+
+            return render(request , "alumnos.html" , {"alumnos":alumno})
+    else:
+        mi_formulario1 = Alumno_formulario(initial={"nombre":alumno.nombre , "apellido":alumno.apellido})
+    
+    return render( request , "editar_alumno.html" , {"mi_formulario1": mi_formulario1 , "alumno":alumno})
+
+def elimina_profesor(request , id):
+    profesor = Profesor.objects.get(id=id)
+    profesor.delete()
+
+    profesor = Profesor.objects.all()
+
+    return render(request , "profesores.html" , {"profesores":profesor})
+
+def editar_profesor(request , id):
+
+    profesor = Profesor.objects.get(id=id)
+
+    if request.method == "POST":
+
+        mi_formulario2 = Profesor_formulario( request.POST )
+        if mi_formulario2.is_valid():
+            datos = mi_formulario2.cleaned_data
+            profesor.nombre = datos["Nombre"]
+            profesor.apellido = datos["Apellido"]
+            profesor.save()
+
+            profesor = Profesor.objects.all()
+
+            return render(request , "profesores.html" , {"profesores":profesor})
+
+        
+    else:
+        mi_formulario2 = Profesor_formulario(initial={"nombre":profesor.nombre , "apellido":profesor.apellido})
+    
+    return render( request , "editar_profesor.html" , {"mi_formulario2": mi_formulario2 , "profesor":profesor})
 
 
 def login_request(request):
@@ -195,7 +254,8 @@ def login_request(request):
 
             if user is not None:
                 login(request , user)
-                return render(request, "inicio.html" , {"mensaje":f"Bienvenido/a {usuario}", "Usuario":f"{usuario}"})
+                avatares = Avatar.objects.filter(user=request.user.id)
+                return render(request, "inicio.html" , {"url":avatares[0].imagen.url})
             else:
                 return HttpResponse(f"Usuario no encontrado")
         else:
@@ -220,13 +280,23 @@ def register(request):
         form = UserCreationForm()
     return render(request , "registro.html" , {"form":form})
 
-
+@login_required
 def editarPerfil(request):
 
     usuario = request.user
 
     if request.method == "POST":
-        pass
+        
+        mi_formulario = UserEditForm(request.POST)
+
+        if mi_formulario.is_valid():
+            
+            informacion = mi_formulario.cleaned_data
+            usuario.email = informacion["email"]
+            password = informacion["password1"]
+            usuario.set_password(password)
+            usuario.save()
+            return render(request , "inicio.html")
 
     else:
         miFormulario = UserEditForm(initial={"email":usuario.email})
